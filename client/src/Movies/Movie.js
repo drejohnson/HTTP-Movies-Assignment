@@ -1,48 +1,55 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useHistory } from "react-router-dom";
 import axios from "axios";
 import MovieCard from "./MovieCard";
-export default class Movie extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      movie: null
-    };
-  }
 
-  componentDidMount() {
-    this.fetchMovie(this.props.match.params.id);
-  }
+const Movie = ({ addToSavedList }) => {
+  const initialState = {
+    title: "",
+    director: "",
+    metascore: "",
+    stars: []
+  };
+  const [movie, setMovie] = useState(initialState);
+  const { id } = useParams();
+  const history = useHistory();
 
-  componentWillReceiveProps(newProps) {
-    if (this.props.match.params.id !== newProps.match.params.id) {
-      this.fetchMovie(newProps.match.params.id);
-    }
-  }
-
-  fetchMovie = id => {
+  useEffect(() => {
     axios
       .get(`http://localhost:5000/api/movies/${id}`)
-      .then(res => this.setState({ movie: res.data }))
+      .then(res => setMovie(res.data))
       .catch(err => console.log(err.response));
+  }, [id]);
+
+  const saveMovie = () => {
+    addToSavedList(movie);
   };
 
-  saveMovie = () => {
-    const addToSavedList = this.props.addToSavedList;
-    addToSavedList(this.state.movie);
+  const updateMovie = () => {
+    history.push(`/update-movie/${id}`);
   };
 
-  render() {
-    if (!this.state.movie) {
-      return <div>Loading movie information...</div>;
-    }
+  const deleteMovie = () => {
+    axios
+      .delete(`http://localhost:5000/api/movies/${id}`, movie)
+      .then(res => history.push("/"))
+      .catch(err => console.log(err));
+  };
 
-    return (
-      <div className="save-wrapper">
-        <MovieCard movie={this.state.movie} />
-        <div className="save-button" onClick={this.saveMovie}>
-          Save
-        </div>
+  return (
+    <div className="save-wrapper">
+      <MovieCard movie={movie} />
+      <div className="save-button" onClick={saveMovie}>
+        Save
       </div>
-    );
-  }
-}
+      <div className="edit-button" onClick={updateMovie}>
+        Edit
+      </div>
+      <div className="delete-button" onClick={deleteMovie}>
+        Delete
+      </div>
+    </div>
+  );
+};
+
+export default Movie;
